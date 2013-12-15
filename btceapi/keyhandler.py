@@ -13,7 +13,7 @@ class KeyHandler(object):
     '''KeyHandler handles the tedious task of managing nonces associated
     with a BTC-e API key/secret pair.
     The getNextNonce method is threadsafe, all others are not.'''
-    def __init__(self, filename=None, resaveOnDeletion=True):
+    def __init__(self, profile=None, resaveOnDeletion=True):
         '''The given file is assumed to be a text file with three lines
         (key, secret, nonce) per entry.'''
         if not resaveOnDeletion:
@@ -21,24 +21,25 @@ class KeyHandler(object):
                           " default to True in future versions.")
         self._keys = {}
         self.resaveOnDeletion = False
-        self.filename = filename
-        if filename is not None:
+        self.profile = profile
+        if profile is not None:
             self.resaveOnDeletion = resaveOnDeletion
-            f = open(filename, "rt")
-            while True:
-                key = f.readline().strip()
-                if not key:
-                    break
-                secret = f.readline().strip()
-                nonce = int(f.readline().strip())
-                self.addKey(key, secret, nonce)
+            # f = open(filename, "rt")
+            # while True:
+            #     key = f.readline().strip()
+            #     if not key:
+            #         break
+            #     secret = f.readline().strip()
+            #     nonce = int(f.readline().strip())
+            #     self.addKey(key, secret, nonce)
+            self.addKey(profile.btce_api_key, profile.btce_api_secret, profile.btce_api_nonce)
 
     def __del__(self):
         self.close()
 
     def close(self):
         if self.resaveOnDeletion:
-            self.save(self.filename)
+            self.save(self.profile)
 
     def __enter__(self):
         return self
@@ -53,10 +54,14 @@ class KeyHandler(object):
     def getKeys(self):
         return self._keys.keys()
 
-    def save(self, filename):
-        f = open(filename, "wt")
+    def save(self, profile):
+        # f = open(filename, "wt")
         for k, data in self._keys.items():
-            f.write("%s\n%s\n%d\n" % (k, data.secret, data.nonce))
+            profile.btce_api_key = k
+            profile.btce_api_secret = data.secret
+            profile.btce_api_nonce = data.nonce
+        #     f.write("%s\n%s\n%d\n" % (k, data.secret, data.nonce))
+
 
     def addKey(self, key, secret, next_nonce):
         self._keys[key] = KeyData(secret, next_nonce)
